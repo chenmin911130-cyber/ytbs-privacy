@@ -2,125 +2,38 @@
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>隐私权政策 · YouTube AI 双语字幕</title>
-    <style>
-      body { max-width: 720px; margin: 32px auto; padding: 0 20px 64px; font: 16px/1.65 system-ui, "PingFang SC", "Noto Sans SC", sans-serif; color: #1a1a1a; }
-      h1 { font-size: 28px; line-height: 1.3; margin-bottom: 8px; }
-      h2 { font-size: 18px; margin-top: 28px; }
-      p, li { margin: 8px 0; }
-      .meta { color: #444; }
-      hr { border: 0; border-top: 1px solid #ddd; margin: 48px 0 32px; }
-      a { color: #1557c0; }
-    </style>
+    <meta name="viewport" content="width=device-width" />
+    <title>YouTube AI 双语字幕 · 隐私说明</title>
   </head>
   <body>
-    <h1>隐私权政策</h1>
-    <p class="meta">适用产品：YouTube AI 双语字幕（Chrome 扩展）· 版本 v0.2 · 生效日期：2026 年 11 月 26 日</p>
-    <p>联系开发者：<a href="mailto:leonardochen2011@gmail.com">leonardochen2011@gmail.com</a></p>
-
-    <h2>这项扩展做什么</h2>
-    <p>它在桌面 Chrome 的 YouTube 点播页上显示英文字幕，并叠加简体中文译文。扩展不提供用户账号，不投放广告，不使用分析或追踪脚本，也不出售数据。</p>
-
-    <h2>默认：在设备上完成本地翻译</h2>
-    <p>在支持 Chrome 内置 Translator API 的浏览器中，英译简体中文（en→zh-Hans，必要时再尝试 zh）默认在本机完成。字幕文本和视频标题不会因此发送到我们的服务器。首次使用时，Chrome 可能从 Google 下载语言包到这台电脑；这由 Chrome 完成，不是我们的服务。</p>
-
-    <h2>何时会使用云端翻译</h2>
-    <p>在本地语言包尚未就绪（包括仍在下载，或需要你再点击一次才能启用），或当前浏览器不支持、无法使用内置翻译时，扩展会改用云端回退，以便在本地准备完成前仍能显示中文。本扩展只提供英译简体中文，没有其他目标语言的云端路径。本地翻译一旦可用，后续句子改在本机翻译，不再调用云端。</p>
-    <p>云端请求发送到我们的 Cloudflare Worker 代理 <a href="https://ytbs-proxy.chenmin911130.workers.dev">https://ytbs-proxy.chenmin911130.workers.dev</a>，再转发到 <strong>Ollama Cloud</strong>（模型为 deepseek-v4.1-flash）。Ollama 按其自身政策处理收到的内容。</p>
-    <p>发送到该代理的内容包括：</p>
-    <ul>
-      <li>待翻译的英文字幕文本，以及可选的分片（parts）；</li>
-      <li>相邻字幕上下文（当前批次前后各最多约 2 条）和视频标题，用于提高译文连贯性；这些内容也会一并转发给 Ollama Cloud；</li>
-      <li>视频 ID（只送到我们的代理，用于请求校验；不会写入我们的存储，不会出现在我们的应用日志中，也不会转发给 Ollama）；</li>
-      <li>每条字幕在本批次中的标识（id）；目标语言在服务端固定为简体中文，请求体里没有单独的目标语言字段；</li>
-      <li>用于额度校验的访客令牌（HTTP <code>Authorization</code> 头）。首次云端使用时，扩展会先向代理发送本机生成的匿名安装 ID（UUID），以换取该令牌。</li>
-    </ul>
-    <p>若旧版本曾在本机保存过你自己的 API Key，扩展仍可能把它随请求发给代理，并改走你指定的服务商（Ollama 或 OpenRouter）。当前设置界面不再提供 Key 输入。代理不会保存或在日志中记录该 Key。你可以通过清除扩展数据删除本机残留的 Key。</p>
-
-    <h2>我们在服务器上保存什么、保存多久</h2>
-    <ul>
-      <li><strong>每日云端字数额度计数：</strong>按匿名安装 ID 和 UTC 日期记录已用字符数。该项在 KV 中保存 172800 秒（48 小时）后自动过期。默认上限为每个安装每日 20,000 字符。</li>
-      <li><strong>访客令牌签发限流：</strong>签发令牌时，用请求 IP 的 SHA-256 摘要（不保存原始 IP）按 UTC 日计数。该项同样保存 172800 秒。每个摘要每日最多签发 20 个令牌。访客令牌是「安装 ID + HMAC 签名」，不含过期时间或其他声明；服务端只校验签名，并不存储令牌本身。令牌在本机保留，直到你清除扩展数据，或我们轮换签名密钥之后失效。</li>
-      <li><strong>公共译文缓存：</strong>缓存条目的键是字幕文本与标题的哈希，值是简体中文译文（及可选分片），不含明文原文。保存 2592000 秒（30 天），用于减少对同一公共字幕的重复翻译。</li>
-      <li><strong>月度费用计数：</strong>按日历月记录云端翻译的费用累加，用于全局月度预算（默认 20 元人民币）。我们的代码未为该项设置自动过期时间，键名按年-月区分。</li>
-    </ul>
-    <p>上述存储由 Cloudflare KV 承载。我们不会在 KV 中保存账号、姓名、原始 IP、访客令牌、API Key，或未哈希的字幕原文。</p>
-
-    <h2>日志</h2>
-    <p>在当前线上 Worker（版本 6bef59d0）中，翻译成功时的应用日志只包含运行元数据：事件名、服务商、模型名称，以及提示/补全的 token 数量。日志<strong>不包含</strong>字幕文本、标题、视频 ID、安装 ID、令牌或 IP。翻译失败时，该版本不会再写一条对应的应用日志（仓库较新的 Worker 代码会额外记录失败原因、批次大小和延迟，同样不含字幕原文；该版本尚未部署到线上）。</p>
-    <p>Cloudflare 作为托管平台，可能按其产品设置保留 Workers 或请求日志。若启用了 Workers Logs，官方说明的保留期目前按套餐为 3 天或 7 天。我们未能核对本账户实际开启的日志产品与精确保留期；平台级访问日志是否包含 IP 等请求元数据，也不在本扩展代码的控制范围内。</p>
-
-    <h2>本机保存的内容</h2>
-    <p>下列数据保存在这台设备上的 Chrome 存储或扩展的 IndexedDB 中，不会同步到我们的服务器（字幕样式除外，见下）：</p>
-    <ul>
-      <li>匿名安装 ID 与访客令牌（<code>chrome.storage.local</code>）；</li>
-      <li>语言包就绪状态、欢迎页进度、角标/弹窗等界面状态；</li>
-      <li>本机译文缓存（IndexedDB，仅存译文及哈希键，按使用情况淘汰）；</li>
-      <li>字幕颜色、字号等样式（<code>chrome.storage.sync</code>，随你的 Chrome 账号在你自己的设备间同步，不同步到我们的服务器）；</li>
-      <li>如有旧版残留，可能还有本机 API Key（local，不同步）。</li>
-    </ul>
-    <p>卸载扩展或在 Chrome 中清除该扩展的数据，会删除这些本机数据。</p>
-
-    <h2>我们不会做的事</h2>
-    <p>不提供账号登录，不读取你的 YouTube 账号或密码，不采集音频（v0.2 已移除语音识别），不读取浏览历史，不投放广告，不使用第三方分析 SDK，不出售数据，也不把数据用于信用评估或与字幕翻译无关的目的。</p>
-
-    <h2>政策变更</h2>
-    <p>若处理方式有变，我们会更新本页并修改生效日期。</p>
-
-    <hr />
-
-    <h1 lang="en">Privacy Policy</h1>
-    <p class="meta" lang="en">Product: YouTube AI 双语字幕 (a Chrome extension) · Version v0.2 · Effective date: 26 November 2026</p>
-    <p lang="en">Contact: <a href="mailto:leonardochen2011@gmail.com">leonardochen2011@gmail.com</a></p>
-
-    <h2 lang="en">What this extension does</h2>
-    <p lang="en">On desktop Chrome YouTube watch pages, it shows English captions and overlays a Simplified Chinese translation. There are no user accounts, no ads, no analytics or tracking scripts, and we do not sell data.</p>
-
-    <h2 lang="en">Default: on-device translation</h2>
-    <p lang="en">In browsers that support Chrome’s built-in Translator API, English-to-Simplified Chinese translation (en→zh-Hans, then zh if needed) runs on your device by default. Caption text and the video title are not sent to our servers for that path. The first time you use it, Chrome may download a language pack from Google onto this computer; that download is performed by Chrome, not by us.</p>
-
-    <h2 lang="en">When cloud translation is used</h2>
-    <p lang="en">If the on-device language pack is not yet ready (including while it is downloading, or until you click once more to enable it), or if this browser does not support the built-in Translator, the extension falls back to a cloud path so Chinese captions can still appear. The product only translates English into Simplified Chinese; there is no cloud path for other language pairs. Once local translation is available, later sentences are translated on the device and are not sent to the cloud.</p>
-    <p lang="en">Cloud requests go to our Cloudflare Worker proxy at <a href="https://ytbs-proxy.chenmin911130.workers.dev">https://ytbs-proxy.chenmin911130.workers.dev</a>, which forwards them to <strong>Ollama Cloud</strong> (model: deepseek-v4.1-flash). Ollama processes what it receives under its own privacy policy.</p>
-    <p lang="en">What is sent to the proxy:</p>
-    <ul lang="en">
-      <li>The English caption text to be translated, and optional sentence parts;</li>
-      <li>Nearby caption context (up to about two cues before and after the current batch) and the video title, to improve consistency; these are also forwarded to Ollama Cloud;</li>
-      <li>The video ID (sent to our proxy for request validation only; it is not stored by us, not written to our application logs, and not forwarded to Ollama);</li>
-      <li>A per-batch caption id; the target language is fixed as Simplified Chinese on the server, and the request body has no separate target-language field;</li>
-      <li>A guest token in the HTTP <code>Authorization</code> header, used to enforce quotas. The first cloud use also sends a locally generated anonymous install ID (a UUID) to obtain that token.</li>
-    </ul>
-    <p lang="en">If an older version stored your own API key on the device, the extension may still send it with the request and use the provider you chose (Ollama or OpenRouter). The current settings UI does not offer a key field. The proxy does not store or log the key. You can remove a leftover key by clearing the extension’s data.</p>
-
-    <h2 lang="en">What we store on the server, and for how long</h2>
-    <ul lang="en">
-      <li><strong>Daily cloud character quota counters:</strong> characters used, keyed by anonymous install ID and UTC date, stored in KV for 172,800 seconds (48 hours). The default limit is 20,000 characters per install per day.</li>
-      <li><strong>Guest-token issuance limits:</strong> when a token is issued, we increment a counter keyed by the SHA-256 digest of the request IP (the raw IP is not stored), per UTC day, also for 172,800 seconds, with a cap of 20 tokens per digest per day. The guest token is the install ID plus an HMAC signature. It has no expiry or other claims. The server verifies the signature and does not store the token. The token remains on your device until you clear the extension’s data, or until we rotate the signing secret.</li>
-      <li><strong>Public translation cache:</strong> the key is a hash of the caption text and title; the value is the Simplified Chinese translation (and optional parts), not the plaintext source. Entries expire after 2,592,000 seconds (30 days), to avoid repeating work for the same public captions.</li>
-      <li><strong>Monthly cost counter:</strong> a calendar-month total used for a global cloud budget (default CNY 20). Our code does not set an automatic expiry on this item; it is keyed by year and month.</li>
-    </ul>
-    <p lang="en">This data is held in Cloudflare KV. We do not store accounts, names, raw IPs, guest tokens, API keys, or unhashed caption text in KV.</p>
-
-    <h2 lang="en">Logs</h2>
-    <p lang="en">On the live Worker (version 6bef59d0), a successful translation writes an application log with operational metadata only: event name, provider, model, and prompt/completion token counts. These logs do <strong>not</strong> include caption text, titles, video IDs, install IDs, tokens, or IP addresses. On failure, this live version does not write a matching application log (newer Worker code in the repository would also record a failure reason, batch size, and latency, still without caption text; that build is not what is deployed).</p>
-    <p lang="en">Cloudflare, as the host, may retain Workers or request logs under its product settings. If Workers Logs is enabled, Cloudflare’s published retention is currently 3 or 7 days depending on plan. We have not verified this account’s exact logging product or retention. Whether platform access logs include request metadata such as IP is outside this extension’s code.</p>
-
-    <h2 lang="en">What stays on your device</h2>
-    <p lang="en">The following stays in Chrome storage or in the extension’s IndexedDB on this device, and is not uploaded to our servers (except that caption style may sync across your own Chrome browsers, as noted):</p>
-    <ul lang="en">
-      <li>The anonymous install ID and guest token (<code>chrome.storage.local</code>);</li>
-      <li>Language-pack readiness, welcome-page progress, and badge/popup status;</li>
-      <li>An on-device translation cache (IndexedDB; translations and hash keys only, evicted by use);</li>
-      <li>Caption colors and type size (<code>chrome.storage.sync</code>, synced by Chrome across your devices, not to our servers);</li>
-      <li>A leftover API key from an older version, if one is still present (local, not synced).</li>
-    </ul>
-    <p lang="en">Uninstalling the extension or clearing its data in Chrome removes this on-device data.</p>
-
-    <h2 lang="en">What we do not do</h2>
-    <p lang="en">We do not offer account sign-in, read your YouTube account or password, capture audio (speech recognition was removed in v0.2), read browsing history, show ads, use third-party analytics SDKs, sell data, or use data for credit decisions or purposes unrelated to caption translation.</p>
-
-    <h2 lang="en">Changes</h2>
-    <p lang="en">If our practices change, we will update this page and the effective date.</p>
+    <main>
+      <h1>隐私说明 · v0.3.0</h1>
+      <p>
+        <strong>所有文字不离开本机。</strong>YouTube 字幕和你选择翻译的网页正文，都由 Chrome
+        内置的本地翻译（Translator
+        API）在你的设备上翻译。扩展不把字幕、视频标题或网页文字发送给我们或任何第三方翻译服务；0.3.0
+        不包含任何云端翻译代码。
+      </p>
+      <p>
+        首次使用时，Chrome 可能会从 Google 下载中文语言模型（这是 Chrome
+        自身的组件下载，不包含你的页面文字）。下载完成后可离线翻译。
+      </p>
+      <p>
+        无广告。不收集数据：不收集个人身份资料、账号、浏览历史或使用统计，不采集音频，没有任何分析或追踪脚本，也不生成安装
+        ID。
+      </p>
+      <p>
+        保存在本机的内容：字幕颜色与字号通过 Chrome
+        同步（chrome.storage.sync）；其余设置、悬浮按钮停靠位置和语言包状态保存在
+        chrome.storage.local；字幕译文缓存保存在本机
+        IndexedDB。网页译文只保存在当前标签页内存中，关闭或离开页面即清除。从 0.2.x 更新时，旧版的 API
+        Key、匿名安装 ID 与代理令牌会被自动删除。卸载扩展会清除所有本机扩展数据。
+      </p>
+      <p>
+        权限用途：storage 保存上述设置；activeTab 与 scripting
+        仅在你点击「翻译此页」、右键菜单或按快捷键时，把翻译脚本注入当前标签；contextMenus
+        提供右键菜单；www.youtube.com 主机权限用于在播放器上显示双语字幕。
+      </p>
+    </main>
   </body>
 </html>
